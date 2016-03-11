@@ -146,7 +146,7 @@ class Perceptron:
     def eval_output_layer(self):        
         self.output_layer = self.sigmoid(np.dot(self.hidden_layer, self.weights1))
             
-    def train(self, X, Y, alpha=0.001, number_of_epochs=10000):      
+    def train(self, X, Y, alpha=0.001, number_of_epochs=100000):      
     
         #initialize weights
         np.random.seed(1)
@@ -174,7 +174,7 @@ class Perceptron:
             self.weights0 += alpha * self.input_layer.T.dot(hidden_delta)
             
             #print actual mean squared error    
-            if i%1000 == 1:
+            if i%10000 == 1:
                 print(mean_squared_error(self.expected_output, self.output_layer))
             
     def predict(self, in_data, encode=True):
@@ -244,18 +244,25 @@ if __name__ == '__main__':
     print("Evaluated: ", dt)
     print()
     
+    '''
     print("TEST2")
     out1=p.predict(np.array([[[-17, 39, 150]], [[0.5, -0.8, -0.2]]]))
     out1=out1.reshape((30,2))
     print("Expected: -16.5, 38.2, 149.08\n")
     print()
     '''
-    print("TEST3")
-    in2= encode_data(np.array([[-17, 39, 150], [12, -23, -20]]).T, p.rg)
-    out2=p.predict(in2, False)
-    exp2=encode_data(np.array([[-5, 16, 130]]).T, p.rg)
-    print(mean_squared_error(exp2, out2)) 
     
+    print("TEST3")
+    deg = p.encoder.encode_data(np.array([[-17, 39, 150]]).T)
+    act = p.encoder.encode_data(np.array([[0.5, -0.8, -0.2]]).T, False)
+    out2=p.predict(np.append(deg, act).reshape(deg.shape[0] + act.shape[0], deg.shape[1]).T, False)
+    exp2=p.encoder.encode_data(np.array([[-16.5, 38.2, 149.08]]).T).T
+    print(mean_squared_error(exp2, out2))
+    dec = p.encoder.decode_eval_data(out2)
+    print("Expected: ", np.array([[-16.5, 38.2, 149.08]]))
+    print("Evaluated: ", dec)
+    print()
+    '''
     print("TEST4")
     print(p.predict(np.array(pickle.load(open('test.p', 'rb')))))
     print("Expected:")
