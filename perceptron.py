@@ -7,7 +7,7 @@ from sklearn.utils import shuffle
 from matplotlib.pyplot import plot, draw, show
     
 class GaussianEncoder:
-    def __init__(self, number_of_gauss=10, action_number_of_gauss=5):
+    def __init__(self, number_of_gauss=15, action_number_of_gauss=10):
         """
         Input:
             number_of_gauss - number of gaussians to be used for encoding a value.
@@ -202,7 +202,7 @@ class Perceptron:
     def eval_output_layer(self):        
         self.output_layer = self.sigmoid(np.dot(self.hidden_layer, self.weights1))
             
-    def train(self, X, Y, alpha=0.001, number_of_epochs=2000):      
+    def train(self, X, Y, alpha=0.001, number_of_epochs=8000):      
         
         error = np.array([])
     
@@ -302,12 +302,14 @@ if __name__ == '__main__':
     X1, X2, Y = pickle.load(open('data.p', 'rb'))
     x1 = p.encoder.encode_data(X1[:5].T)
     x2 = p.encoder.encode_data(X2[:5].T, False)
-    outt=p.predict(np.append(x1, x2).reshape(x1.shape[0] + x2.shape[0], x1.shape[1]).T, False)
+    out1=p.predict(np.append(x1, x2).reshape(x1.shape[0] + x2.shape[0], x1.shape[1]).T, False)
     yt = p.encoder.encode_data(Y[:5].T).T
-    print(mean_squared_error(yt, outt))
-    dt = p.encoder.decode_eval_data(outt)
+    print(mean_squared_error(yt, out1))
+    max_decoded = p.encoder.decode_eval_data(out1)
+    max_sum_decoded = p.encoder.decode_max_sum_data(out1)
     print("Expected: ", Y[:5])
-    print("Evaluated: ", dt)
+    print("Evaluated maximal fire decoding: ", max_decoded)
+    print("Evaluated maximal sum decoding: ", max_sum_decoded)
     print()
     
     '''
@@ -324,9 +326,11 @@ if __name__ == '__main__':
     out2=p.predict(np.append(deg, act).reshape(deg.shape[0] + act.shape[0], deg.shape[1]).T, False)
     exp2=p.encoder.encode_data(np.array([[-16.5, 38.2, 149.08]]).T).T
     print(mean_squared_error(exp2, out2))
-    dec = p.encoder.decode_eval_data(out2)
+    max_dec = p.encoder.decode_eval_data(out2)
+    max_sum_dec = p.encoder.decode_max_sum_data(out2)
     print("Expected: ", np.array([[-16.5, 38.2, 149.08]]))
-    print("Evaluated: ", dec)
+    print("Evaluated maximal fire decoding: ", max_dec)
+    print("Evaluated maximal sum decoding: ", max_sum_dec)
     print()
     '''
     print("TEST4")
