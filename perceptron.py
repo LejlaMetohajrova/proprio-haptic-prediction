@@ -50,7 +50,7 @@ class GaussianEncoder:
                 
     def decode_data(self, data):
         """
-        Decode data from population of neurons.
+        Decode angles from population of neurons. For each activation of gaussian it returns 2 angles.
         
         Input:
             data - (2D list of floats) list of shape (3(DoF)*number_of_gauss, records).
@@ -78,13 +78,13 @@ class GaussianEncoder:
         
     def decode_eval_data(self, data):
         """
-        Decode data from population of neurons. which fire enough.
+        Decode angles from population of neurons, which fire the most. Returns one angle per population.
         
         Input:
             data - (2D list of floats) list of shape (records, 3(DoF)*number_of_gauss).
             
         Output:
-            Decoded data 
+            Decoded data - one angle per each DoF, multiple records.
         """
         decoded = []
         
@@ -146,7 +146,7 @@ class Perceptron:
     def eval_output_layer(self):        
         self.output_layer = self.sigmoid(np.dot(self.hidden_layer, self.weights1))
             
-    def train(self, X, Y, alpha=0.001, number_of_epochs=100000):      
+    def train(self, X, Y, alpha=0.001, number_of_epochs=20000):      
     
         #initialize weights
         np.random.seed(1)
@@ -160,7 +160,7 @@ class Perceptron:
         
         for i in range(number_of_epochs):
             
-            X, Y = shuffle(X, Y)            
+            X, Y = shuffle(X, Y)          
             self.input_layer = X
             self.expected_output = Y
             
@@ -174,7 +174,7 @@ class Perceptron:
             self.weights0 += alpha * self.input_layer.T.dot(hidden_delta)
             
             #print actual mean squared error    
-            if i%10000 == 1:
+            if i%500 == 1:
                 print(mean_squared_error(self.expected_output, self.output_layer))
             
     def predict(self, in_data, encode=True):
@@ -226,7 +226,7 @@ if __name__ == '__main__':
     x2 = p.encoder.encode_data(X2[:1].T, False)
     out=p.predict(np.append(x1, x2).reshape(x1.shape[0] + x2.shape[0], x1.shape[1]).T, False)
     y = p.encoder.encode_data(Y[:1].T).T
-    print(mean_squared_error(y, out)) #this is a small value
+    print(mean_squared_error(y, out)) #this should be a small value
     d = p.encoder.decode_eval_data(out)
     print("Expected: ", Y[:1])
     print("Evaluated: ", d)
@@ -273,3 +273,4 @@ if __name__ == '__main__':
     out= p.encoder.decode_data(a)
     print("Expected: 3, 21, 165\n")
     '''
+    

@@ -81,10 +81,15 @@ if __name__ == '__main__':
     g = Generator()
     
     np.set_printoptions(precision=2)
-    x11, x21, y1 = g.generate(300)
-    x12, x22, y2 = g.generate(300)
-    x1 = np.append(x11, x12).reshape(600, 3)
-    x2 = np.append(x21, x22).reshape(600, 3)
-    y = np.append(y1, y2).reshape(600,3)
+    
+    x1, x2, y = g.generate(10)
+    
+    for i in range(1, 1000):
+        a, b, c = g.generate(10)
+        x1 = np.append(x1, a).reshape(10 + i*10, 3)
+        x2 = np.append(x2, b).reshape(10 + i*10, 3)
+        y = np.append(y, c).reshape(10 + i*10,3)
+        
     pickle.dump([x1, x2, y], open('data.p', 'wb'))
-    pickle.dump(g.generate(10, False), open('test.p', 'wb'))
+    pickle.dump(g.generate(100, False), open('test.p', 'wb'))
+    
