@@ -6,13 +6,14 @@ from sklearn.metrics import mean_squared_error
 from sklearn.utils import shuffle
     
 class GaussianEncoder:
-    def __init__(self, number_of_gauss=10):
+    def __init__(self, number_of_gauss=20, action_number_of_gauss=5):
         """
         Input:
             number_of_gauss - number of gaussians to be used for encoding a value.
         """
         self.ranges = np.array([[-25, 10], [-5, 50], [20, 170]])
         self.number_of_gauss = number_of_gauss
+        self.action_number_of_gauss = action_number_of_gauss
     
     def encode_data(self, data, use_range=True):
         """
@@ -35,13 +36,16 @@ class GaussianEncoder:
                 sigma = (r / (self.number_of_gauss - 1))/2
                 ni = np.array([self.ranges[i][0] + s*sigma*2 for s in range(0, self.number_of_gauss)])
                 
+                for j in range(0, self.number_of_gauss):
+                    encoded.append(self.gauss(data[i], ni[j], sigma))
+                
             # encoding action in range(-10,10)
             else:
                 sigma = (20 / (self.number_of_gauss - 1))/2
-                ni = np.array([-10 + s*sigma*2 for s in range(0, self.number_of_gauss)])  
+                ni = np.array([-10 + s*sigma*2 for s in range(0, self.action_number_of_gauss)])  
             
-            for j in range(0, self.number_of_gauss):
-                encoded.append(self.gauss(data[i], ni[j], sigma))
+                for j in range(0, self.action_number_of_gauss):
+                    encoded.append(self.gauss(data[i], ni[j], sigma))
                 
         return np.array(encoded)
                 
@@ -76,7 +80,30 @@ class GaussianEncoder:
         b = np.sqrt(np.absolute(2* np.power(sigma,2) * np.log(y))) + ni
         return (a, b)
         
-    def decode_eval_data(self, data):
+    def maxSumIndexes(self, population):
+        """
+        Input:
+            population - array of activations of a population of gaussians.
+            
+        Output:
+            Returns two adjacent indexes, which sum of values is maximum.
+        """
+        
+        maxIndex = np.zeros(population.shape[1])
+        maxValue = np.zeros(population.shape[1])
+        
+        for i in range(0, len(population) - 1):
+            sum = population[i] + population[i+1]
+            
+            greater = sum > maxValue
+            for j in range(0, len(greater)):
+                if greater[j]:
+                    maxValue[j] = sum[j]
+                    maxIndex[j] = i
+        
+        return np.array([maxIndex, maxIndex + 1]).astype(int)
+        
+    def decode_max_sum_data(self, data):
         """
         Decode angles from population of neurons, which fire the most. Returns one angle per population.
         
@@ -90,7 +117,35 @@ class GaussianEncoder:
         
         for y in data:
             # 3 DoF x number_of_gauss            
-            y = y.reshape(3, 10)
+            y = y.reshape(self.number_of_gauss, 3)
+            indexes = self.maxSumIndexes(y).T
+            d = []
+            for i in range(0, len(indexes)):
+                # set parameters of gaussians
+                r = self.ranges[i][1] - self.ranges[i][0]
+                sigma = (r / (self.number_of_gauss - 1))/2
+                ni = np.array([self.ranges[i][0] + s*sigma*2 for s in indexes[i]])     
+                
+                d.append(np.median(self.inverse_gauss(y.T[i][indexes[i]], ni, sigma)))
+            decoded.append(d)
+                
+        return np.array(decoded)
+        
+    def decode_eval_data(self, data):
+        """
+        Decode angles from neurons in populations, which fire the most. Returns one angle per population.
+        
+        Input:
+            data - (2D list of floats) list of shape (records, 3(DoF)*number_of_gauss).
+            
+        Output:
+            Decoded data - one angle per each DoF, multiple records.
+        """
+        decoded = []
+        
+        for y in data:
+            # 3 DoF x number_of_gauss            
+            y = y.reshape(3, self.number_of_gauss)
             indexes = np.argpartition(y, -2).T[-2:].T # computes indexes of 2 largest values for each DoF
             d = []
             for i in range(0, len(indexes)):
@@ -146,11 +201,11 @@ class Perceptron:
     def eval_output_layer(self):        
         self.output_layer = self.sigmoid(np.dot(self.hidden_layer, self.weights1))
             
-    def train(self, X, Y, alpha=0.001, number_of_epochs=20000):      
+    def train(self, X, Y, alpha=0.001, number_of_epochs=20001):      
     
         #initialize weights
         np.random.seed(1)
-        self.weights0 = 2*np.random.random((2*3*self.encoder.number_of_gauss + 1, 100)) - 1
+        self.weights0 = 2*np.random.random((3*self.encoder.number_of_gauss + 3*self.encoder.action_number_of_gauss + 1, 100)) - 1
         self.weights1 = 2*np.random.random((100, 3*self.encoder.number_of_gauss)) - 1
         
         # Add column of ones to X
@@ -174,7 +229,7 @@ class Perceptron:
             self.weights0 += alpha * self.input_layer.T.dot(hidden_delta)
             
             #print actual mean squared error    
-            if i%500 == 1:
+            if i%500 == 0:
                 print(mean_squared_error(self.expected_output, self.output_layer))
             
     def predict(self, in_data, encode=True):
@@ -219,6 +274,8 @@ if __name__ == '__main__':
     p = Perceptron()
     
     p.train(p.X, p.Y)
+    pickle.dump([p.weights0, p.weights1], open('weights.p', 'wb'))
+    #p.weights0, p.weights1 = pickle.load(open('weights.p', 'rb'))
     
     print("TEST1")
     X1, X2, Y = pickle.load(open('data.p', 'rb'))
