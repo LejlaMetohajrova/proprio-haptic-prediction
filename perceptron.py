@@ -4,9 +4,10 @@ import numpy as np
 import pickle
 from sklearn.metrics import mean_squared_error
 from sklearn.utils import shuffle
+from matplotlib.pyplot import plot, draw, show
     
 class GaussianEncoder:
-    def __init__(self, number_of_gauss=20, action_number_of_gauss=5):
+    def __init__(self, number_of_gauss=10, action_number_of_gauss=5):
         """
         Input:
             number_of_gauss - number of gaussians to be used for encoding a value.
@@ -201,7 +202,9 @@ class Perceptron:
     def eval_output_layer(self):        
         self.output_layer = self.sigmoid(np.dot(self.hidden_layer, self.weights1))
             
-    def train(self, X, Y, alpha=0.001, number_of_epochs=20001):      
+    def train(self, X, Y, alpha=0.001, number_of_epochs=2000):      
+        
+        error = np.array([])
     
         #initialize weights
         np.random.seed(1)
@@ -228,9 +231,13 @@ class Perceptron:
             self.weights1 += alpha * self.hidden_layer.T.dot(output_delta)
             self.weights0 += alpha * self.input_layer.T.dot(hidden_delta)
             
-            #print actual mean squared error    
-            if i%500 == 0:
-                print(mean_squared_error(self.expected_output, self.output_layer))
+            #plot actual mean squared error
+            if i%10 == 9:
+                error = np.append(error, mean_squared_error(self.expected_output, self.output_layer))
+                plot(error)
+                draw()
+        
+        show()
             
     def predict(self, in_data, encode=True):
         """
@@ -284,9 +291,11 @@ if __name__ == '__main__':
     out=p.predict(np.append(x1, x2).reshape(x1.shape[0] + x2.shape[0], x1.shape[1]).T, False)
     y = p.encoder.encode_data(Y[:1].T).T
     print(mean_squared_error(y, out)) #this should be a small value
-    d = p.encoder.decode_eval_data(out)
+    max = p.encoder.decode_eval_data(out)
+    max_sum = p.encoder.decode_max_sum_data(out)
     print("Expected: ", Y[:1])
-    print("Evaluated: ", d)
+    print("Evaluated maximal fire decoding: ", max)
+    print("Evaluated maximal sum decoding: ", max_sum)
     print()
     
     print("TEST1.1")
