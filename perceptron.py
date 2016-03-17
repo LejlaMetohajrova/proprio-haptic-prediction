@@ -4,10 +4,10 @@ import numpy as np
 import pickle
 from sklearn.metrics import mean_squared_error
 from sklearn.utils import shuffle
-from matplotlib.pyplot import plot, draw, show
+import matplotlib.pyplot as plt
     
 class GaussianEncoder:
-    def __init__(self, number_of_gauss=15, action_number_of_gauss=10):
+    def __init__(self, number_of_gauss=10, action_number_of_gauss=10):
         """
         Input:
             number_of_gauss - number of gaussians to be used for encoding a value.
@@ -190,11 +190,11 @@ class Perceptron:
         self.X = np.append(x1, x2).reshape(x1.shape[0] + x2.shape[0], x1.shape[1]).T
         self.Y = self.encoder.encode_data(Y.T).T
         
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
+    def sigmoid(self, x, k=1):
+        return 1 / (1 + np.exp(-k*x))
         
-    def deriv(self, y):
-        return y * (1 - y)
+    def deriv(self, y, k=1):
+        return k * y * (1 - y)
         
     def eval_hidden_layer(self):
         self.hidden_layer = self.sigmoid(np.dot(self.input_layer, self.weights0))
@@ -202,7 +202,7 @@ class Perceptron:
     def eval_output_layer(self):        
         self.output_layer = self.sigmoid(np.dot(self.hidden_layer, self.weights1))
             
-    def train(self, X, Y, alpha=0.001, number_of_epochs=8000):      
+    def train(self, X, Y, alpha=0.001, number_of_epochs=1000):      
         
         error = np.array([])
     
@@ -232,12 +232,11 @@ class Perceptron:
             self.weights0 += alpha * self.input_layer.T.dot(hidden_delta)
             
             #plot actual mean squared error
-            if i%10 == 9:
-                error = np.append(error, mean_squared_error(self.expected_output, self.output_layer))
-                plot(error)
-                draw()
+            error = np.append(error, mean_squared_error(self.expected_output, self.output_layer))
+            plt.plot(error)
+            plt.draw()
         
-        show()
+        plt.show()
             
     def predict(self, in_data, encode=True):
         """
@@ -281,9 +280,10 @@ if __name__ == '__main__':
     p = Perceptron()
     
     p.train(p.X, p.Y)
-    pickle.dump([p.weights0, p.weights1], open('weights.p', 'wb'))
-    #p.weights0, p.weights1 = pickle.load(open('weights.p', 'rb'))
+    pickle.dump([p.weights0, p.weights1], open('weights3.p', 'wb'))
+    #p.weights0, p.weights1 = pickle.load(open('weights3.p', 'rb'))
     
+    """
     print("TEST1")
     X1, X2, Y = pickle.load(open('data.p', 'rb'))
     x1 = p.encoder.encode_data(X1[:1].T)
@@ -293,20 +293,39 @@ if __name__ == '__main__':
     print(mean_squared_error(y, out)) #this should be a small value
     max = p.encoder.decode_eval_data(out)
     max_sum = p.encoder.decode_max_sum_data(out)
+    
+    plt.subplot(221)
+    plt.plot(Y[:1].T, np.arange(3), 'ro', label='targets')
+    plt.plot(max.T, np.arange(3), 'bo', label='evaluated max fire')
+    plt.plot(max_sum.T, np.arange(3), 'go', label='evaluated max sum')
+    plt.grid(True)
+    plt.show()
+    
     print("Expected: ", Y[:1])
     print("Evaluated maximal fire decoding: ", max)
     print("Evaluated maximal sum decoding: ", max_sum)
     print()
     
+    plt.subplot(222)
     print("TEST1.1")
     X1, X2, Y = pickle.load(open('data.p', 'rb'))
-    x1 = p.encoder.encode_data(X1[:5].T)
-    x2 = p.encoder.encode_data(X2[:5].T, False)
+    x1 = p.encoder.encode_data(X1.T)
+    x2 = p.encoder.encode_data(X2.T, False)
     out1=p.predict(np.append(x1, x2).reshape(x1.shape[0] + x2.shape[0], x1.shape[1]).T, False)
-    yt = p.encoder.encode_data(Y[:5].T).T
+    yt = p.encoder.encode_data(Y.T).T
     print(mean_squared_error(yt, out1))
     max_decoded = p.encoder.decode_eval_data(out1)
     max_sum_decoded = p.encoder.decode_max_sum_data(out1)
+    
+    plt.hist(e)
+    plt.plot(e)
+    
+    plt.plot(Y[:5].T, np.arange(3), 'ro', label='targets')
+    plt.plot(max_decoded.T, np.arange(3), 'bo', label='evaluated max fire')
+    plt.plot(max_sum_decoded.T, np.arange(3), 'go', label='evaluated max sum')    
+    plt.grid(True)
+    plt.show()
+    
     print("Expected: ", Y[:5])
     print("Evaluated maximal fire decoding: ", max_decoded)
     print("Evaluated maximal sum decoding: ", max_sum_decoded)
@@ -320,6 +339,7 @@ if __name__ == '__main__':
     print()
     '''
     
+    plt.subplot(223)
     print("TEST3")
     deg = p.encoder.encode_data(np.array([[-17, 39, 150]]).T)
     act = p.encoder.encode_data(np.array([[0.5, -0.8, -0.2]]).T, False)
@@ -328,10 +348,18 @@ if __name__ == '__main__':
     print(mean_squared_error(exp2, out2))
     max_dec = p.encoder.decode_eval_data(out2)
     max_sum_dec = p.encoder.decode_max_sum_data(out2)
+    
+    plt.plot( np.array([[-16.5, 38.2, 149.08]]).T, np.arange(3), 'ro', label='targets')
+    plt.plot(max_dec.T, np.arange(3), 'bo', label='evaluated max fire')
+    plt.plot(max_sum_dec.T, np.arange(3), 'go', label='evaluated max sum')
+    plt.grid(True)
+    plt.show()
+    
     print("Expected: ", np.array([[-16.5, 38.2, 149.08]]))
     print("Evaluated maximal fire decoding: ", max_dec)
     print("Evaluated maximal sum decoding: ", max_sum_dec)
     print()
+    
     '''
     print("TEST4")
     print(p.predict(np.array(pickle.load(open('test.p', 'rb')))))
@@ -343,4 +371,7 @@ if __name__ == '__main__':
     out= p.encoder.decode_data(a)
     print("Expected: 3, 21, 165\n")
     '''
-    
+    """
+    a=[]
+    for t in out1:
+        a = np.append(a, np.amax(t))
