@@ -148,7 +148,7 @@ if __name__ == '__main__':
     deg = p.encoder.encode_data(np.array([[17, 39, 50]]).T)
     act = p.encoder.encode_data(np.array([[0.5, -0.8, -0.2]]).T, False)
     out = p.predict(np.append(deg, act, axis=0).T, False)
-    tar =  np.array([[17, 39, 50]])/ 100.0
+    tar =  np.array([[17.5, 38.2, 49.8]])/ 100.0
     print(p.mean_squared_error(tar, out))
     
     print("Expected: ", np.array([[17, 39, 50]]))
