@@ -35,13 +35,17 @@ class Perceptron:
         #self.Y = self.encoder.encode_data(Y.T).T
         self.Y = Y
         
-    def act(self, x):
-        #return np.tanh(x)
-        return 1 / (1 + np.exp(-x))
+    def act(self, x, type='sigmoid'):
+        if type == 'sigmoid':
+            return 1 / (1 + np.exp(-x))
+        else:
+            return np.tanh(x)
         
-    def deriv(self, y):
-        #return 1 - y*y
-        return y * (1 - y)
+    def deriv(self, y, type='sigmoid'):
+        if type == 'sigmoid':
+            return y * (1 - y)
+        else:
+            return 1 - y*y
     
     def mean_squared_error(self, ts, ys):
         err = sum((y - t) ** 2 for (y, t) in zip(ys, ts)) / len(ys)
@@ -53,7 +57,7 @@ class Perceptron:
         self.hidden_layer = self.act(np.dot(self.input_layer, self.weights0))
         
     def eval_output_layer(self):        
-        self.output_layer = self.act(np.dot(self.hidden_layer, self.weights1))
+        self.output_layer = self.act(np.dot(self.hidden_layer, self.weights1), type='tanh')
             
     def train(self, X, Y, alpha=0.001, number_of_epochs=100):      
         
@@ -79,7 +83,7 @@ class Perceptron:
             self.eval_hidden_layer()
             self.eval_output_layer()
             
-            output_delta = (self.expected_output - self.output_layer) * self.deriv(self.output_layer)
+            output_delta = (self.expected_output - self.output_layer) * self.deriv(self.output_layer, type='tanh')
             hidden_delta = output_delta.dot(self.weights1.T) * self.deriv(self.hidden_layer)
             
             self.weights1 += alpha * self.hidden_layer.T.dot(output_delta)
@@ -151,5 +155,13 @@ if __name__ == '__main__':
     tar =  np.array([[17.5, 38.2, 49.8]])/ 100.0
     print(p.mean_squared_error(tar, out))
     
-    print("Expected: ", np.array([[17, 39, 50]]))
+    print("Expected: ", np.array([[17.5, 38.2, 49.8]]))
+    print("Evaluated: ", out*100)
+    
+    X1, X2, Y = pickle.load(open('data.p', 'rb'))    
+    x1 = p.encoder.encode_data(X1[0:1].T)
+    x2 = p.encoder.encode_data(X2[0:1].T, False)
+    out = p.predict(np.append(x1, x2, axis=0).T, False)
+    print(p.mean_squared_error(Y[0:1]/100.0, out))
+    print("Expected: ", Y[0:1])
     print("Evaluated: ", out*100)
