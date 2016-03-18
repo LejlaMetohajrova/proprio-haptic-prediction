@@ -8,7 +8,7 @@ class Generator:
         self.read_data()
         
     def read_data(self):
-        self.range = np.array([[-25, 10], [-5, 50], [20, 170]])
+        self.range = np.array([[-20, 25], [-10, 70], [-5, 100]])
     
     def line(self, x, a, b):
         return a*x + b
@@ -26,7 +26,7 @@ class Generator:
             
             rg = r[1] - r[0]
             b = r[0] + rg/2
-            a = 2*np.random.random_sample() -1 #range (-1, 1)
+            a = 10 * np.random.random_sample() - 5 # range (-5, 5)
             
             x1 = (r[0] - b)/a
             x2 = (r[1] - b)/a
@@ -53,16 +53,19 @@ class Generator:
         X1 = []
         X2 = []
         Y = []
+        
         #iterate through records
         for i in range(0, len(samples) -1):
             recordx1 = []
             recordx2 = []
             recordy = []
+            
             #iterate through DoF
             for j in range(0, len(samples[i])):
                 recordx1.append(samples[i][j])
                 recordx2.append(samples[i+1][j] - samples[i][j])
                 recordy.append(samples[i+1][j])
+                
             X1.append(recordx1)
             X2.append(recordx2)
             Y.append(recordy)
@@ -92,4 +95,3 @@ if __name__ == '__main__':
         
     pickle.dump([x1, x2, y], open('data.p', 'wb'))
     pickle.dump(g.generate(100, False), open('test.p', 'wb'))
-    

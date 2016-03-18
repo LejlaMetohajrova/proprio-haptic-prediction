@@ -1,165 +1,9 @@
 from __future__ import print_function
-from random import random
 import numpy as np
 import pickle
-from sklearn.metrics import mean_squared_error
-from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
+from encoder import GaussianEncoder
     
-class GaussianEncoder:
-    def __init__(self, number_of_gauss=10, action_number_of_gauss=10):
-        """
-        Input:
-            number_of_gauss - number of gaussians to be used for encoding a value.
-        """
-        self.ranges = np.array([[-25, 10], [-5, 50], [20, 170]])
-        self.number_of_gauss = number_of_gauss
-        self.action_number_of_gauss = action_number_of_gauss
-    
-    def encode_data(self, data, use_range=True):
-        """
-        Encode each value from data into a population of neurons.
-        
-        Input:
-            data - (2D list of floats) of shape (3, number of records).
-        
-        Output:
-            Encoded data (2D list of floats) of shape (number of records, number_of_gauss*3).
-        """
-        encoded = []
-        
-        # iterate through DoF
-        for i in range(0, len(data)):
-            
-            # set parameters of gaussians
-            if use_range:
-                r = self.ranges[i][1] - self.ranges[i][0]
-                sigma = (r / (self.number_of_gauss - 1))/2
-                ni = np.array([self.ranges[i][0] + s*sigma*2 for s in range(0, self.number_of_gauss)])
-                
-                for j in range(0, self.number_of_gauss):
-                    encoded.append(self.gauss(data[i], ni[j], sigma))
-                
-            # encoding action in range(-10,10)
-            else:
-                sigma = (20 / (self.number_of_gauss - 1))/2
-                ni = np.array([-10 + s*sigma*2 for s in range(0, self.action_number_of_gauss)])  
-            
-                for j in range(0, self.action_number_of_gauss):
-                    encoded.append(self.gauss(data[i], ni[j], sigma))
-                
-        return np.array(encoded)
-                
-    def gauss(self, fi, ni, sigma):
-        return np.exp(- np.power((fi - ni), 2) / (2 * np.power(sigma,2)))
-                
-    def decode_data(self, data):
-        """
-        Decode angles from population of neurons. For each activation of gaussian it returns 2 angles.
-        
-        Input:
-            data - (2D list of floats) list of shape (3(DoF)*number_of_gauss, records).
-            
-        Output:
-            Decoded data (3D list of floats) of shape (data.shape[0], data.shape[1], 2).
-        """
-        decoded = []
-        
-        for i in range(0, len(data)):
-            if i%self.number_of_gauss == 0:
-                # set parameters of gaussians
-                r = self.ranges[int(i/ self.number_of_gauss)][1] - self.ranges[int(i/ self.number_of_gauss)][0]
-                sigma = (r / (self.number_of_gauss - 1))/2
-                ni = np.array([self.ranges[int(i/ self.number_of_gauss)][0] + s*sigma*2 for s in range(0, self.number_of_gauss)])                
-            
-            decoded.append(np.array(self.inverse_gauss(data[i], ni[i%self.number_of_gauss], sigma)).T)
-                
-        return np.array(decoded)
-        
-    def inverse_gauss(self, y, ni, sigma):
-        a = - np.sqrt(np.absolute(2* np.power(sigma,2) * np.log(y))) + ni
-        b = np.sqrt(np.absolute(2* np.power(sigma,2) * np.log(y))) + ni
-        return (a, b)
-        
-    def maxSumIndexes(self, population):
-        """
-        Input:
-            population - array of activations of a population of gaussians.
-            
-        Output:
-            Returns two adjacent indexes, which sum of values is maximum.
-        """
-        
-        maxIndex = np.zeros(population.shape[1])
-        maxValue = np.zeros(population.shape[1])
-        
-        for i in range(0, len(population) - 1):
-            sum = population[i] + population[i+1]
-            
-            greater = sum > maxValue
-            for j in range(0, len(greater)):
-                if greater[j]:
-                    maxValue[j] = sum[j]
-                    maxIndex[j] = i
-        
-        return np.array([maxIndex, maxIndex + 1]).astype(int)
-        
-    def decode_max_sum_data(self, data):
-        """
-        Decode angles from population of neurons, which fire the most. Returns one angle per population.
-        
-        Input:
-            data - (2D list of floats) list of shape (records, 3(DoF)*number_of_gauss).
-            
-        Output:
-            Decoded data - one angle per each DoF, multiple records.
-        """
-        decoded = []
-        
-        for y in data:
-            # 3 DoF x number_of_gauss            
-            y = y.reshape(self.number_of_gauss, 3)
-            indexes = self.maxSumIndexes(y).T
-            d = []
-            for i in range(0, len(indexes)):
-                # set parameters of gaussians
-                r = self.ranges[i][1] - self.ranges[i][0]
-                sigma = (r / (self.number_of_gauss - 1))/2
-                ni = np.array([self.ranges[i][0] + s*sigma*2 for s in indexes[i]])     
-                
-                d.append(np.median(self.inverse_gauss(y.T[i][indexes[i]], ni, sigma)))
-            decoded.append(d)
-                
-        return np.array(decoded)
-        
-    def decode_eval_data(self, data):
-        """
-        Decode angles from neurons in populations, which fire the most. Returns one angle per population.
-        
-        Input:
-            data - (2D list of floats) list of shape (records, 3(DoF)*number_of_gauss).
-            
-        Output:
-            Decoded data - one angle per each DoF, multiple records.
-        """
-        decoded = []
-        
-        for y in data:
-            # 3 DoF x number_of_gauss            
-            y = y.reshape(3, self.number_of_gauss)
-            indexes = np.argpartition(y, -2).T[-2:].T # computes indexes of 2 largest values for each DoF
-            d = []
-            for i in range(0, len(indexes)):
-                # set parameters of gaussians
-                r = self.ranges[i][1] - self.ranges[i][0]
-                sigma = (r / (self.number_of_gauss - 1))/2
-                ni = np.array([self.ranges[i][0] + s*sigma*2 for s in indexes[i]])     
-                
-                d.append(np.median(self.inverse_gauss(y[i][indexes[i]], ni, sigma)))
-            decoded.append(d)
-                
-        return np.array(decoded)
-
 class Perceptron:
 
     def __init__(self):
@@ -187,29 +31,39 @@ class Perceptron:
         x1 = self.encoder.encode_data(X1.T)
         x2 = self.encoder.encode_data(X2.T, False)
         
-        self.X = np.append(x1, x2).reshape(x1.shape[0] + x2.shape[0], x1.shape[1]).T
-        self.Y = self.encoder.encode_data(Y.T).T
+        self.X = np.append(x1, x2, axis=0).T
+        #self.Y = self.encoder.encode_data(Y.T).T
+        self.Y = Y
         
-    def sigmoid(self, x, k=1):
-        return 1 / (1 + np.exp(-k*x))
+    def act(self, x):
+        #return np.tanh(x)
+        return 1 / (1 + np.exp(-x))
         
-    def deriv(self, y, k=1):
-        return k * y * (1 - y)
+    def deriv(self, y):
+        #return 1 - y*y
+        return y * (1 - y)
+    
+    def mean_squared_error(self, ts, ys):
+        err = sum((y - t) ** 2 for (y, t) in zip(ys, ts)) / len(ys)
+        if len(err) > 1:
+            err = sum(err) / len(err)
+        return err
         
     def eval_hidden_layer(self):
-        self.hidden_layer = self.sigmoid(np.dot(self.input_layer, self.weights0))
+        self.hidden_layer = self.act(np.dot(self.input_layer, self.weights0))
         
     def eval_output_layer(self):        
-        self.output_layer = self.sigmoid(np.dot(self.hidden_layer, self.weights1))
+        self.output_layer = self.act(np.dot(self.hidden_layer, self.weights1))
             
-    def train(self, X, Y, alpha=0.001, number_of_epochs=1000):      
+    def train(self, X, Y, alpha=0.001, number_of_epochs=100):      
         
         error = np.array([])
     
-        #initialize weights
+        # Initialize weights
         np.random.seed(1)
-        self.weights0 = 2*np.random.random((3*self.encoder.number_of_gauss + 3*self.encoder.action_number_of_gauss + 1, 100)) - 1
-        self.weights1 = 2*np.random.random((100, 3*self.encoder.number_of_gauss)) - 1
+        self.weights0 = 2*np.random.random((3*self.encoder.number_of_gauss + 3*self.encoder.action_number_of_gauss + 1, 5)) - 1
+        #self.weights1 = 2*np.random.random((100, 3*self.encoder.number_of_gauss)) - 1
+        self.weights1 = 2*np.random.random((5, 3)) - 1
         
         # Add column of ones to X
         # This is to add the bias unit to the input layer
@@ -218,9 +72,9 @@ class Perceptron:
         
         for i in range(number_of_epochs):
             
-            X, Y = shuffle(X, Y)          
-            self.input_layer = X
-            self.expected_output = Y
+            perm = np.random.permutation(len(X))     
+            self.input_layer = X[perm]
+            self.expected_output = Y[perm]
             
             self.eval_hidden_layer()
             self.eval_output_layer()
@@ -231,10 +85,17 @@ class Perceptron:
             self.weights1 += alpha * self.hidden_layer.T.dot(output_delta)
             self.weights0 += alpha * self.input_layer.T.dot(hidden_delta)
             
-            #plot actual mean squared error
-            error = np.append(error, mean_squared_error(self.expected_output, self.output_layer))
+            # Weight decay
+            self.weights0 *= 0.999999
+            self.weights1 *= 0.999999
+            
+            # Plot mean squared error
+            error = np.append(error, self.mean_squared_error(self.expected_output, self.output_layer))
             plt.plot(error)
             plt.draw()
+            
+            if i%100 == 0:
+                print(error[i])
         
         plt.show()
             
@@ -258,7 +119,7 @@ class Perceptron:
         if(encode):
             x1 = self.encoder.encode_data(in_data[0].T)
             x2 = self.encoder.encode_data(in_data[1].T)
-            self.input_layer = np.append(x1, x2).reshape(x1.shape[0] + x2.shape[0], x1.shape[1]).T
+            self.input_layer = np.append(x1, x2, axis = 0).T
         else:
             self.input_layer = in_data
         
@@ -279,99 +140,16 @@ if __name__ == '__main__':
     
     p = Perceptron()
     
-    p.train(p.X, p.Y)
-    pickle.dump([p.weights0, p.weights1], open('weights3.p', 'wb'))
-    #p.weights0, p.weights1 = pickle.load(open('weights3.p', 'rb'))
+    p.train(p.X, p.Y/100.0)
+    #pickle.dump([p.weights0, p.weights1], open('weights.p', 'wb'))
+    #p.weights0, p.weights1 = pickle.load(open('weights.p', 'rb'))
     
-    """
     print("TEST1")
-    X1, X2, Y = pickle.load(open('data.p', 'rb'))
-    x1 = p.encoder.encode_data(X1[:1].T)
-    x2 = p.encoder.encode_data(X2[:1].T, False)
-    out=p.predict(np.append(x1, x2).reshape(x1.shape[0] + x2.shape[0], x1.shape[1]).T, False)
-    y = p.encoder.encode_data(Y[:1].T).T
-    print(mean_squared_error(y, out)) #this should be a small value
-    max = p.encoder.decode_eval_data(out)
-    max_sum = p.encoder.decode_max_sum_data(out)
-    
-    plt.subplot(221)
-    plt.plot(Y[:1].T, np.arange(3), 'ro', label='targets')
-    plt.plot(max.T, np.arange(3), 'bo', label='evaluated max fire')
-    plt.plot(max_sum.T, np.arange(3), 'go', label='evaluated max sum')
-    plt.grid(True)
-    plt.show()
-    
-    print("Expected: ", Y[:1])
-    print("Evaluated maximal fire decoding: ", max)
-    print("Evaluated maximal sum decoding: ", max_sum)
-    print()
-    
-    plt.subplot(222)
-    print("TEST1.1")
-    X1, X2, Y = pickle.load(open('data.p', 'rb'))
-    x1 = p.encoder.encode_data(X1.T)
-    x2 = p.encoder.encode_data(X2.T, False)
-    out1=p.predict(np.append(x1, x2).reshape(x1.shape[0] + x2.shape[0], x1.shape[1]).T, False)
-    yt = p.encoder.encode_data(Y.T).T
-    print(mean_squared_error(yt, out1))
-    max_decoded = p.encoder.decode_eval_data(out1)
-    max_sum_decoded = p.encoder.decode_max_sum_data(out1)
-    
-    plt.hist(e)
-    plt.plot(e)
-    
-    plt.plot(Y[:5].T, np.arange(3), 'ro', label='targets')
-    plt.plot(max_decoded.T, np.arange(3), 'bo', label='evaluated max fire')
-    plt.plot(max_sum_decoded.T, np.arange(3), 'go', label='evaluated max sum')    
-    plt.grid(True)
-    plt.show()
-    
-    print("Expected: ", Y[:5])
-    print("Evaluated maximal fire decoding: ", max_decoded)
-    print("Evaluated maximal sum decoding: ", max_sum_decoded)
-    print()
-    
-    '''
-    print("TEST2")
-    out1=p.predict(np.array([[[-17, 39, 150]], [[0.5, -0.8, -0.2]]]))
-    out1=out1.reshape((30,2))
-    print("Expected: -16.5, 38.2, 149.08\n")
-    print()
-    '''
-    
-    plt.subplot(223)
-    print("TEST3")
-    deg = p.encoder.encode_data(np.array([[-17, 39, 150]]).T)
+    deg = p.encoder.encode_data(np.array([[17, 39, 50]]).T)
     act = p.encoder.encode_data(np.array([[0.5, -0.8, -0.2]]).T, False)
-    out2=p.predict(np.append(deg, act).reshape(deg.shape[0] + act.shape[0], deg.shape[1]).T, False)
-    exp2=p.encoder.encode_data(np.array([[-16.5, 38.2, 149.08]]).T).T
-    print(mean_squared_error(exp2, out2))
-    max_dec = p.encoder.decode_eval_data(out2)
-    max_sum_dec = p.encoder.decode_max_sum_data(out2)
+    out = p.predict(np.append(deg, act, axis=0).T, False)
+    tar =  np.array([[17, 39, 50]])/ 100.0
+    print(p.mean_squared_error(tar, out))
     
-    plt.plot( np.array([[-16.5, 38.2, 149.08]]).T, np.arange(3), 'ro', label='targets')
-    plt.plot(max_dec.T, np.arange(3), 'bo', label='evaluated max fire')
-    plt.plot(max_sum_dec.T, np.arange(3), 'go', label='evaluated max sum')
-    plt.grid(True)
-    plt.show()
-    
-    print("Expected: ", np.array([[-16.5, 38.2, 149.08]]))
-    print("Evaluated maximal fire decoding: ", max_dec)
-    print("Evaluated maximal sum decoding: ", max_sum_dec)
-    print()
-    
-    '''
-    print("TEST4")
-    print(p.predict(np.array(pickle.load(open('test.p', 'rb')))))
-    print("Expected:")
-    print(np.array(pickle.load(open('exp.p', 'rb'))))
-    
-    print("TEST - encoding + decoding")
-    a = p.encoder.encode_data(np.array([[3, 21, 165]]).T)
-    out= p.encoder.decode_data(a)
-    print("Expected: 3, 21, 165\n")
-    '''
-    """
-    a=[]
-    for t in out1:
-        a = np.append(a, np.amax(t))
+    print("Expected: ", np.array([[17, 39, 50]]))
+    print("Evaluated: ", out*100)
