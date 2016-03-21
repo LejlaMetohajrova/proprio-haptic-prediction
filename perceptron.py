@@ -59,7 +59,7 @@ class Perceptron:
     def eval_output_layer(self):        
         self.output_layer = self.act(np.dot(self.hidden_layer, self.weights1), type='tanh')
             
-    def train(self, X, Y, alpha=0.001, number_of_epochs=100):      
+    def train(self, X, Y, alpha=0.001, number_of_epochs=301):      
         
         error = np.array([])
     
@@ -95,12 +95,11 @@ class Perceptron:
             
             # Plot mean squared error
             error = np.append(error, self.mean_squared_error(self.expected_output, self.output_layer))
-            plt.plot(error)
-            plt.draw()
             
             if i%100 == 0:
                 print(error[i])
         
+        plt.plot(error)
         plt.show()
             
     def predict(self, in_data, encode=True):
