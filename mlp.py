@@ -39,16 +39,16 @@ class MultiLayerPerceptron:
         y_right = self.encoder.encode_sigmoid(right_proprio[1:].T).T
         
         # Prepare data for training
-        X = np.append(np.append(x1_left, x1_right, axis=1), np.append(x2_left, x2_right, axis=1), axis=1)
-        Y = np.append(np.append(y_left, y_right, axis=1), haptic, axis=1)
+        self.X = np.append(np.append(x1_left, x1_right, axis=1), np.append(x2_left, x2_right, axis=1), axis=1)
+        self.Y = np.append(np.append(y_left, y_right, axis=1), haptic, axis=1)
 
         # Randomly select and separate validation data
-        perm = np.random.permutation(len(X))
-        self.X = X[perm[:15000]]
-        self.Y = Y[perm[:15000]]
+        perm = np.random.permutation(len(self.X))
+        self.train_X = self.X[perm[:15000]]
+        self.train_Y = self.Y[perm[:15000]]
         
-        self.valid_X = X[perm[15000:]]
-        self.valid_Y = Y[perm[15000:]]
+        self.valid_X = self.X[perm[15000:]]
+        self.valid_Y = self.Y[perm[15000:]]
 
     def act(self, x):
         """
@@ -67,7 +67,7 @@ class MultiLayerPerceptron:
         Mean squared error of output ys compared to target ts.
         """
         err = sum((y - t) ** 2 for (y, t) in zip(ys, ts)) / len(ys)
-        if len(err) > 1:
+        if type(err) is np.ndarray and len(err) > 1:
             err = sum(err) / len(err)
         return err
         
@@ -137,6 +137,9 @@ class MultiLayerPerceptron:
         """
         Predict output based on the given data.
         """
+        if len(in_data.shape) < 2:
+            in_data = in_data.reshape((1, in_data.shape[0]))
+            
         self.input_layer = in_data
         
         # Add the bias unit to the input layer
@@ -169,7 +172,8 @@ if __name__ == '__main__':
     np.set_printoptions(precision=2)
     
     p = MultiLayerPerceptron()    
-    p.train(p.X, p.Y)
+    p.train(p.train_X, p.train_Y)
+    print()
     
     print("TEST1")
     out = p.predict(p.valid_X[0:1])
@@ -182,4 +186,14 @@ if __name__ == '__main__':
     print("Expected haptic:\n", tar[:,-40:])
     print("Evaluated haptic:\n", out[:,-40:])
     print()
+    
+    print("TEST2")
+    out = p.predict(p.X)
+    print(p.mse(out, p.Y))
+    haptic_error = np.array([p.mse(p.Y[i,-40:], out[i,-40:]) for i in range(len(out))])
+    
+    # Plot mean squared error of tactile stimuli
+    f = plt.figure('Tactile_error')
+    plt.plot(haptic_error, c='g')
+    f.savefig('pic\Tactile_error')   
     
