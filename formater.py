@@ -3,6 +3,10 @@ import numpy as np
 from operator import itemgetter
 import heapq
 
+"""
+Scripts used to produce final dataset.
+"""
+
 with open("leftArm.log", 'r') as f:
      file_lines = [''.join(['l ', x.strip(), '\n']) for x in f]
 
