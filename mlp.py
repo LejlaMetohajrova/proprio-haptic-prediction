@@ -157,7 +157,7 @@ def plot_tar_out(tar, out, i):
     """
     s = tar.shape[1]
     f, axarr = plt.subplots(3, sharex=True)
-    step=5000
+    step=1000
     
     for j in range(0, 3):
         t = axarr[j].scatter(np.arange(s), tar[step*j], c='r')
@@ -191,6 +191,14 @@ if __name__ == '__main__':
     out = p.predict(p.X)
     print(p.mse(out, p.Y))
     haptic_error = np.array([p.mse(p.Y[i,-40:], out[i,-40:]) for i in range(len(out))])
+    
+    f = plt.figure('Mean activation of tactile neurons')
+    plt.plot(np.mean(out[:,-40:], axis=0), c='g')
+    plt.plot(np.mean(p.Y[:,-40:], axis=0), c='r')
+    f.savefig('pic\Tactile_activation')
+    
+    perm = np.random.permutation(len(p.Y))
+    plot_tar_out(p.Y[:,-40:][perm], out[:,-40:][perm], 3)
     
     # Plot mean squared error of tactile stimuli
     f = plt.figure('Tactile_error')
