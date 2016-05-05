@@ -4,7 +4,6 @@ import pickle
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from encoder import PopulationEncoder
-from scipy.sparse import lil_matrix
     
 class MultiLayerPerceptron:
 
@@ -40,24 +39,16 @@ class MultiLayerPerceptron:
         y_right = self.encoder.encode_sigmoid(right_proprio[1:].T).T
         
         # Prepare data for training
-        x1 = np.append(x1_left, x1_right, axis=1)
-        x2 = np.append(x2_left, x2_right, axis=1)
-        self.X = lil_matrix((x1.shape[0], x1.shape[1] + x2.shape[1]))
-        self.X[:, :x1.shape[1]] = x1
-        self.X[:, x1.shape[1]:] = x2
-        y = lil_matrix((y_left.shape[0], y_left.shape[1] + y_right.shape[1]))
-        y[:, :y_left.shape[1]] = y_left
-        y[:, y_left.shape[1]:] = y_right
-        self.Y = lil_matrix((y.shape[0], y.shape[1] + haptic.shape[1]))
-        self.Y[:, :y.shape[1]] = y
-        self.Y[:, y.shape[1]:] = haptic
+        self.X = np.append(np.append(x1_left, x1_right, axis=1), np.append(x2_left, x2_right, axis=1), axis=1)
+        self.Y = np.append(np.append(y_left, y_right, axis=1), haptic, axis=1)
 
-        # Separate training and validation data
-        self.train_X = self.X[:75000]
-        self.train_Y = self.Y[:75000]
+        # Randomly select and separate validation data
+        perm = np.random.permutation(len(self.X))
+        self.train_X = self.X[perm[:15000]]
+        self.train_Y = self.Y[perm[:15000]]
         
-        self.valid_X = self.X[75000:]
-        self.valid_Y = self.Y[75000:]
+        self.valid_X = self.X[perm[15000:]]
+        self.valid_Y = self.Y[perm[15000:]]
 
     def act(self, x):
         """
@@ -212,5 +203,4 @@ if __name__ == '__main__':
     # Plot mean squared error of tactile stimuli
     f = plt.figure('Tactile_error')
     plt.plot(haptic_error, c='g')
-    f.savefig('pic\Tactile_error')   
-    
+    f.savefig('pic\Tactile_error')
