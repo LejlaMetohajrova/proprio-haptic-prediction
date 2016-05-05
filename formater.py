@@ -23,7 +23,9 @@ with open("skin_events.log", 'r') as f:
      file_lines = [''.join(['s ', x.strip(), '\n']) for x in f]
 
 with open("skin_events.txt", 'w') as f:
-     f.writelines(file_lines)
+    for i in range(len(file_lines)):
+        if i % 5 == 0:
+            f.write(file_lines[i])
 
 def extract_timestamp(line):
     return line.split()[3]
