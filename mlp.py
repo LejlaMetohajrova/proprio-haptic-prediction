@@ -18,10 +18,10 @@ class MultiLayerPerceptron:
         self.data = np.loadtxt(open("d.txt","rb"),delimiter=" ")
         
         # Divide data to haptic stimuli, proprioception of left and right hand
-        haptic = np.array([x[:40] for x in self.data[:-1]])
+        haptic = np.array([x[:42] for x in self.data[:-1]])
         
-        left_proprio = np.array([x[40:47] for x in self.data])
-        right_proprio = np.array([x[47:] for x in self.data])
+        left_proprio = np.array([x[42:49] for x in self.data])
+        right_proprio = np.array([x[49:] for x in self.data])
         
         # Compute action on the left and right hand (given by the difference of proprio)
         left_action = np.array([left_proprio[i+1] - left_proprio[i] for i in range(0, left_proprio.shape[0]-1)])
@@ -43,12 +43,11 @@ class MultiLayerPerceptron:
         self.Y = np.append(np.append(y_left, y_right, axis=1), haptic, axis=1)
 
         # Randomly select and separate validation data
-        perm = np.random.permutation(len(self.X))
-        self.train_X = self.X[perm[:15000]]
-        self.train_Y = self.Y[perm[:15000]]
+        self.train_X = self.X[:15000]
+        self.train_Y = self.Y[:15000]
         
-        self.valid_X = self.X[perm[15000:]]
-        self.valid_Y = self.Y[perm[15000:]]
+        self.valid_X = self.X[15000:]
+        self.valid_Y = self.Y[15000:]
 
     def act(self, x):
         """
@@ -179,26 +178,30 @@ if __name__ == '__main__':
     out = p.predict(p.valid_X[0:1])
     tar = p.valid_Y[0:1]
     print(p.mse(tar, out))
-    ev = p.encoder.decode_sigmoid(out[:,:-40])
-    exp = p.encoder.decode_sigmoid(tar[:,:-40])
+    ev = p.encoder.decode_sigmoid(out[:,:-42])
+    exp = p.encoder.decode_sigmoid(tar[:,:-42])
     print("Expected proprio:\n", exp)
     print("Evaluated proprio:\n", ev)
-    print("Expected haptic:\n", tar[:,-40:])
-    print("Evaluated haptic:\n", out[:,-40:])
+    print("Expected haptic:\n", tar[:,-42:])
+    print("Evaluated haptic:\n", out[:,-42:])
     print()
     
     print("TEST2")
     out = p.predict(p.X)
     print(p.mse(out, p.Y))
-    haptic_error = np.array([p.mse(p.Y[i,-40:], out[i,-40:]) for i in range(len(out))])
+    haptic_error = np.array([p.mse(p.Y[i,-42:], out[i,-42:]) for i in range(len(out))])
+    print()
+    
+    print("TEST3")
+    
     
     f = plt.figure('Mean activation of tactile neurons')
-    plt.plot(np.mean(out[:,-40:], axis=0), c='g')
-    plt.plot(np.mean(p.Y[:,-40:], axis=0), c='r')
+    plt.plot(np.mean(out[:,-42:], axis=0), c='g')
+    plt.plot(np.mean(p.Y[:,-42:], axis=0), c='r')
     f.savefig('pic\Tactile_activation')
     
     perm = np.random.permutation(len(p.Y))
-    plot_tar_out(p.Y[:,-40:][perm], out[:,-40:][perm], 3)
+    plot_tar_out(p.Y[:,-42:][perm], out[:,-42:][perm], 3)
     
     # Plot mean squared error of tactile stimuli
     f = plt.figure('Tactile_error')
