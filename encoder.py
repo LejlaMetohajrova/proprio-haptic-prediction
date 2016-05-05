@@ -26,9 +26,9 @@ class PopulationEncoder:
             
             # set parameters of gaussians
             if use_range:
-                r = self.ranges[i][1] - self.ranges[i][0]
+                r = self.ranges[i%len(self.ranges)][1] - self.ranges[i%len(self.ranges)][0]
                 sigma = (r / (self.angle_gaussians - 1))/2
-                ni = np.array([self.ranges[i][0] + s*sigma*2 for s in range(0, self.angle_gaussians)])
+                ni = np.array([self.ranges[i%len(self.ranges)][0] + s*sigma*2 for s in range(0, self.angle_gaussians)])
                 
                 for j in range(0, self.angle_gaussians):
                     encoded.append(self.gauss(data[i], ni[j], sigma))
@@ -53,9 +53,9 @@ class PopulationEncoder:
         for i in range(0, len(data)):
             
             # set parameters of sigmoids
-            r = self.ranges[i][1] - self.ranges[i][0]
+            r = self.ranges[i%len(self.ranges)][1] - self.ranges[i%len(self.ranges)][0]
             sigma = (r / (self.sigmoids - 1))/2
-            ni = np.array([self.ranges[i][0] + s*sigma*2 for s in range(0, self.sigmoids)])
+            ni = np.array([self.ranges[i%len(self.ranges)][0] + s*sigma*2 for s in range(0, self.sigmoids)])
             
             for j in range(0, self.sigmoids):
                 encoded.append(1 / (1 + np.exp(-data[i] + ni[j])))
