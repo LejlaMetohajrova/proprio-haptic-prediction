@@ -3,7 +3,7 @@ import numpy as np
     
 class PopulationEncoder:
     
-    def __init__(self, angle_gaussians=15, action_gaussians=6, sigmoids=20):
+    def __init__(self, angle_gaussians=20, action_gaussians=15, sigmoids=20):
         self.ranges = np.array([[-95, 10], [0, 160.8], [-37, 80], [15.5, 106], [-90, 90], [-90, 0], [-20, 40]])
         self.angle_gaussians = angle_gaussians
         self.action_gaussians = action_gaussians
@@ -33,10 +33,10 @@ class PopulationEncoder:
                 for j in range(0, self.angle_gaussians):
                     encoded.append(self.gauss(data[i], ni[j], sigma))
                 
-            # encoding action in range(-10,10)
+            # encoding action in range(-25,25)
             else:
-                sigma = (20 / (self.angle_gaussians - 1))/2
-                ni = np.array([-10 + s*sigma*2 for s in range(0, self.action_gaussians)])  
+                sigma = (50 / (self.action_gaussians - 1))/2
+                ni = np.array([-25 + s*sigma*2 for s in range(0, self.action_gaussians)])  
             
                 for j in range(0, self.action_gaussians):
                     encoded.append(self.gauss(data[i], ni[j], sigma))
