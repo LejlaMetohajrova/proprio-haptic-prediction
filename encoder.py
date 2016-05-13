@@ -74,6 +74,9 @@ class PopulationEncoder:
         """
         decoded = []
         
+        if len(data.shape) == 1:
+            data = data.reshape(1, data.shape[0])
+        
         for y in data:        
             y = y.reshape(2*len(self.ranges), self.sigmoids)
             d = []

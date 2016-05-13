@@ -82,7 +82,7 @@ class MultiLayerPerceptron:
         """
         self.output_layer = self.act(np.dot(self.hidden_layer, self.weights1))
             
-    def train(self, X, Y, alpha=0.001, number_of_epochs=201, hidden=50):
+    def train(self, X, Y, alpha=0.001, number_of_epochs=301, hidden=50):
         """
         Training.
         """
@@ -99,6 +99,9 @@ class MultiLayerPerceptron:
         # Add the bias unit to the input layer
         ones = np.atleast_2d(np.ones(X.shape[0]))
         X = np.concatenate((ones.T, X), axis=1)
+        
+        # Pick random index from the training data for plotting targets and outputs
+        example = np.random.randint(X.shape[0])
         
         for i in range(number_of_epochs):
             self.input_layer = X
@@ -118,8 +121,8 @@ class MultiLayerPerceptron:
             
             # Plot targets vs. outputs
             error.append(self.mse(self.expected_output, self.output_layer))
-            if i%10 == 0:
-                plot_tar_out(self.expected_output, self.output_layer, i)
+            if i%50 == 0:
+                plot_tar_out(self.expected_output[example], self.output_layer[example], i)
                 print(error[i])
                 
             # Validation error
@@ -128,9 +131,13 @@ class MultiLayerPerceptron:
         
         # Plot mean squared error
         f = plt.figure('Training')
-        plt.plot(error, c='b')
-        plt.plot(valid_error, c='r')
-        f.savefig('pic\Training')      
+        plt.plot(error, c='b', label='Training error')
+        plt.plot(valid_error, c='r', label='Validation error')
+        plt.xlabel('Epochs')
+        plt.ylabel('Mean squared error')
+        plt.legend(loc=0, ncol=2)
+        f.savefig('pic\Training')   
+        plt.close()   
             
     def predict(self, in_data):
         """
@@ -150,21 +157,18 @@ class MultiLayerPerceptron:
 
         return self.output_layer
 
-def plot_tar_out(tar, out, i):
+def plot_tar_out(tar, out, name):
     """
     Helper function to plot evaluated output compared to desired target.
     """
-    s = tar.shape[1]
-    f, axarr = plt.subplots(3, sharex=True)
-    step=1000
+
+    t = plt.scatter(np.arange(len(tar)), tar, c='r', label='Targets')
+    o = plt.scatter(np.arange(len(tar)), out, c='b', label='Output')
     
-    for j in range(0, 3):
-        t = axarr[j].scatter(np.arange(s), tar[step*j], c='r')
-        o = axarr[j].scatter(np.arange(s), out[step*j], c='b')
-        axarr[j].set_title('Record no.: ' + str(step*j))
-    
-    plt.legend((t, o), ('Targets', 'Output'), loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=2)
-    f.savefig('pic\Figure' + str(i))
+    plt.xlabel('Neuron ID')
+    plt.ylabel('Activation')
+    plt.legend(loc=0, ncol=2)
+    plt.savefig('pic\Figure_' + str(name))
     plt.close()
 
 if __name__ == '__main__':
@@ -174,36 +178,35 @@ if __name__ == '__main__':
     p.train(p.train_X, p.train_Y)
     print()
     
-    print("TEST1")
-    out = p.predict(p.valid_X[0:1])
-    tar = p.valid_Y[0:1]
-    print(p.mse(tar, out))
+    rand_index = np.random.randint(p.valid_X.shape[0])
+    print("TEST1 - random sample from validation dataset with index: ", rand_index)
+    out = p.predict(p.valid_X[rand_index])
+    tar = p.valid_Y[rand_index]
+    print("Mean squared error: ", p.mse(tar, out))
     ev = p.encoder.decode_sigmoid(out[:,:-42])
-    exp = p.encoder.decode_sigmoid(tar[:,:-42])
+    exp = p.encoder.decode_sigmoid(tar[:-42])
     print("Expected proprio:\n", exp)
     print("Evaluated proprio:\n", ev)
-    print("Expected haptic:\n", tar[:,-42:])
+    print("Expected haptic:\n", tar[-42:])
     print("Evaluated haptic:\n", out[:,-42:])
+    plot_tar_out(tar, out, 'test1')
     print()
     
-    print("TEST2")
+    print("TEST2 - on the whole dataset")
     out = p.predict(p.X)
-    print(p.mse(out, p.Y))
-    haptic_error = np.array([p.mse(p.Y[i,-42:], out[i,-42:]) for i in range(len(out))])
-    print()
-    
-    print("TEST3")
-    
-    
-    f = plt.figure('Mean activation of tactile neurons')
-    plt.plot(np.mean(out[:,-42:], axis=0), c='g')
-    plt.plot(np.mean(p.Y[:,-42:], axis=0), c='r')
-    f.savefig('pic\Tactile_activation')
-    
-    perm = np.random.permutation(len(p.Y))
-    plot_tar_out(p.Y[:,-42:][perm], out[:,-42:][perm], 3)
+    print("Mean squared error: ", p.mse(out, p.Y))
+    tactile_error = np.array([p.mse(p.Y[i,-42:], out[i,-42:]) for i in range(len(out))])
     
     # Plot mean squared error of tactile stimuli
     f = plt.figure('Tactile_error')
-    plt.plot(haptic_error, c='g')
-    f.savefig('pic\Tactile_error')
+    plt.plot(tactile_error, c='g')
+    plt.close()
+    
+    f = plt.figure('Mean activation of tactile neurons')
+    plt.xlabel('Neuron ID')
+    plt.ylabel('Mean activation')
+    plt.plot(np.mean(out[:,-42:], axis=0), c='g', label='Predicted')
+    plt.plot(np.mean(p.Y[:,-42:], axis=0), c='r', label='Desired')
+    plt.legend(loc=0, ncol=2)
+    f.savefig('pic\Tactile_activation')
+    plt.close()
