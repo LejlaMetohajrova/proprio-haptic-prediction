@@ -157,15 +157,19 @@ class MultiLayerPerceptron:
 
         return self.output_layer
 
-def plot_tar_out(tar, out, name):
+def plot_tar_out(tar, out, name, range=None):
     """
     Helper function to plot evaluated output compared to desired target.
     """
+    if range is None:
+        range = np.arange(len(tar))
+        plt.xlabel('Neuron ID')
+    else:
+        plt.xlabel('Estimated angle in degrees')
 
-    t = plt.scatter(np.arange(len(tar)), tar, c='r', label='Targets')
-    o = plt.scatter(np.arange(len(tar)), out, c='b', label='Output')
+    t = plt.scatter(range, tar, c='r', label='Targets')
+    o = plt.scatter(range, out, c='b', label='Output')
     
-    plt.xlabel('Neuron ID')
     plt.ylabel('Activation')
     plt.legend(loc=0, ncol=2)
     plt.savefig('pic\Figure_' + str(name))
