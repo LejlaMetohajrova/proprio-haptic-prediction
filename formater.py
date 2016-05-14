@@ -105,7 +105,7 @@ def binarize(contact_vector):
                 b[[i + 20 for i in range(len(taxel[1])) if t in taxel[1][i]]] = 1
         elif v[3] == 5:
             for t in v[19:-1]:
-                b[[i + 30 for i in range(len(taxel[2])) if t in taxel[2][i]]] = 1
+                b[[i + 31 for i in range(len(taxel[2])) if t in taxel[2][i]]] = 1
     return b
 
 with open('d.txt', 'w') as f:
