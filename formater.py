@@ -19,10 +19,10 @@ with open("rightArm.log", 'r') as f:
 with open("rightArm.txt", 'w') as f:
      f.writelines(file_lines)
 
-with open("skin_events.log", 'r') as f:
+with open("skinEvents.log", 'r') as f:
      file_lines = [''.join(['s ', x.strip(), '\n']) for x in f]
 
-with open("skin_events.txt", 'w') as f:
+with open("skinEvents.txt", 'w') as f:
     for i in range(len(file_lines)):
         if i % 5 == 0:
             f.write(file_lines[i])
@@ -30,7 +30,7 @@ with open("skin_events.txt", 'w') as f:
 def extract_timestamp(line):
     return line.split()[3]
 
-with open("skin_events.txt") as f0, open("leftArm.txt") as f1, open("rightArm.txt") as f2:
+with open("skinEvents.txt") as f0, open("leftArm.txt") as f1, open("rightArm.txt") as f2:
     sources = [f0, f1, f2]
     with open("merged.txt", "w") as dest:
         decorated = [
