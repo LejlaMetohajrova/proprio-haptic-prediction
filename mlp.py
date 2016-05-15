@@ -90,6 +90,9 @@ class MultiLayerPerceptron:
         #Init variables to store statistics
         error = []
         valid_error = []
+        
+        # Pick random index from the training data for plotting targets and outputs
+        example = np.random.randint(X.shape[0])
 
         # Init weights with mean 0
         np.random.seed(1)
@@ -99,9 +102,6 @@ class MultiLayerPerceptron:
         # Add the bias unit to the input layer
         ones = np.atleast_2d(np.ones(X.shape[0]))
         X = np.concatenate((ones.T, X), axis=1)
-        
-        # Pick random index from the training data for plotting targets and outputs
-        example = np.random.randint(X.shape[0])
         
         for i in range(number_of_epochs):
             self.input_layer = X
@@ -122,7 +122,9 @@ class MultiLayerPerceptron:
             # Plot targets vs. outputs
             error.append(self.mse(self.expected_output, self.output_layer))
             if i%50 == 0:
-                plot_tar_out(self.expected_output[example], self.output_layer[example], i)
+                for j in range(14):
+                    plot_tar_out(self.expected_output[example][20*j:20*(j+1)], self.output_layer[example][20*j:20*(j+1)], str(i) + '_' + str(j), ids=(20*j, 20*(j+1)))
+                plot_tar_out(self.expected_output[example][20*14:], self.output_layer[example][20*14:], str(i) + '_Tact', ids=(20*14, 322))
                 print(error[i])
                 
             # Validation error
@@ -137,7 +139,7 @@ class MultiLayerPerceptron:
         plt.ylabel('Mean squared error')
         plt.legend(loc=0, ncol=2)
         f.savefig('pic\Training')   
-        plt.close()   
+        plt.close()
             
     def predict(self, in_data):
         """
@@ -157,12 +159,19 @@ class MultiLayerPerceptron:
 
         return self.output_layer
 
-def plot_tar_out(tar, out, name, range=None):
+def plot_tar_out(tar, out, name, range=None, ids=None):
     """
     Helper function to plot evaluated output compared to desired target.
     """
+    axes = plt.gca()
+    axes.set_ylim([-0.1,1.1])
+    plt.ylabel('Activation')
+    
     if range is None:
-        range = np.arange(len(tar))
+        if ids is None:
+            range = np.arange(0.5, len(tar)+0.5, 1)
+        else:
+            range = np.arange(0.5 + ids[0], ids[1]+0.5, 1)
         plt.xlabel('Neuron ID')
     else:
         plt.xlabel('Estimated angle in degrees')
@@ -170,11 +179,11 @@ def plot_tar_out(tar, out, name, range=None):
     plt.scatter(range, tar, c='r', label='Targets', s=40)
     plt.scatter(range, out, c='b', label='Output', s=40)
     plt.legend(loc=0, ncol=2, bbox_to_anchor=(0.5,-0.1))
-    
-    axes = plt.gca()
-    axes.set_ylim([-0.1,1.1])
-    plt.ylabel('Activation')
-    plt.grid()
+    if ids is None:
+        axes.set_xticks(np.arange(0, len(tar) + 1, 1), minor=True)
+    else:
+        axes.set_xticks(np.arange(ids[0], ids[1] + 1, 1), minor=True)
+    plt.grid(which='minor')
     plt.savefig('pic\Figure_' + str(name), bbox_inches='tight')
     plt.close()
 
@@ -196,7 +205,9 @@ if __name__ == '__main__':
     print("Evaluated proprio:\n", ev)
     print("Expected haptic:\n", tar[-42:])
     print("Evaluated haptic:\n", out[:,-42:])
-    plot_tar_out(tar, out, 'test1')
+    for j in range(14):
+        plot_tar_out(tar[20*j:20*(j+1)],out[:, 20*j:20*(j+1)], 'test1_' + str(j), ids=(20*j, 20*(j+1)))
+    plot_tar_out(tar[20*14:],out[:, 20*14:], 'test1_' + 'Tact', ids=(20*14, 322))
     print()
     
     print("TEST2 - on the whole dataset")
