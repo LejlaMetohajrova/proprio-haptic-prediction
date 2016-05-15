@@ -132,7 +132,7 @@ class MultiLayerPerceptron:
         # Plot mean squared error
         f = plt.figure('Training')
         plt.plot(error, c='b', label='Training error')
-        plt.plot(valid_error, c='r', label='Validation error')
+        plt.plot(valid_error, c='r', label='Testing error')
         plt.xlabel('Epochs')
         plt.ylabel('Mean squared error')
         plt.legend(loc=0, ncol=2)
@@ -167,12 +167,15 @@ def plot_tar_out(tar, out, name, range=None):
     else:
         plt.xlabel('Estimated angle in degrees')
 
-    t = plt.scatter(range, tar, c='r', label='Targets')
-    o = plt.scatter(range, out, c='b', label='Output')
+    plt.scatter(range, tar, c='r', label='Targets', s=40)
+    plt.scatter(range, out, c='b', label='Output', s=40)
+    plt.legend(loc=0, ncol=2, bbox_to_anchor=(0.5,-0.1))
     
+    axes = plt.gca()
+    axes.set_ylim([-0.1,1.1])
     plt.ylabel('Activation')
-    plt.legend(loc=0, ncol=2)
-    plt.savefig('pic\Figure_' + str(name))
+    plt.grid()
+    plt.savefig('pic\Figure_' + str(name), bbox_inches='tight')
     plt.close()
 
 if __name__ == '__main__':
