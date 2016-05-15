@@ -214,17 +214,59 @@ if __name__ == '__main__':
     out = p.predict(p.X)
     print("Mean squared error: ", p.mse(out, p.Y))
     tactile_error = np.array([p.mse(p.Y[i,-42:], out[i,-42:]) for i in range(len(out))])
+    print()
     
-    # Plot mean squared error of tactile stimuli
+    # TEST 3 - Plot mean squared error of tactile stimuli in time
     f = plt.figure('Tactile_error')
-    plt.plot(tactile_error, c='g')
+    plt.xlabel('Time')
+    plt.ylabel('Mean activation')
+    plt.plot(np.arange(2000,2500),np.mean(p.Y[2000:2500, -42:], axis=1), c='r', label='Desired')
+    plt.plot(np.arange(2000,2500),np.mean(out[2000:2500, -42:], axis=1), c='g', label='Predicted')
+    plt.legend(loc=0, ncol=3)
+    f.savefig('pic\Tactile_error')
     plt.close()
     
+    # TEST 4 - Plot mean squared error of tactile stimuli per neuron
     f = plt.figure('Mean activation of tactile neurons')
     plt.xlabel('Neuron ID')
     plt.ylabel('Mean activation')
-    plt.plot(np.mean(out[:,-42:], axis=0), c='g', label='Predicted')
-    plt.plot(np.mean(p.Y[:,-42:], axis=0), c='r', label='Desired')
+    axes = plt.gca()
+    axes.set_xlim(0,43)
+    axes.set_ylim(-0.01,0.15)
+    
+    plt.scatter(np.arange(1,43, 1), np.mean(out[:,-42:], axis=0), c='g', label='Predicted')
+    plt.scatter(np.arange(1,43, 1), np.mean(p.Y[:,-42:], axis=0), c='r', label='Desired')
+    plt.plot(np.arange(1,43, 1), np.mean(out[:,-42:], axis=0), c='g')
+    plt.plot(np.arange(1,43, 1), np.mean(p.Y[:,-42:], axis=0), c='r')
+    
+    axes.set_xticks(np.arange(0.5, 43.5, 1), minor=True)
+    plt.grid(which='minor')
     plt.legend(loc=0, ncol=2)
     f.savefig('pic\Tactile_activation')
     plt.close()
+    
+    print("TEST5 - expected touch, activation=0")
+    tact = np.array([1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    left = np.array([-55.31235, 25.725389, 78.320732, 70.790825, -27.407681, -33.02016, -0.223165])
+    right = np.array([-65.470417, 20.09986, 52.075555, 51.450444, -71.702232, -47.872209, 9.486011])
+    action = np.array([0, 0, 0, 0, 0, 0, 0])
+    
+    gl = p.encoder.encode_gaussian(left)
+    gr = p.encoder.encode_gaussian(right)
+    ga = p.encoder.encode_gaussian(action, False)
+    x = np.append(np.append(gl, gr), np.append(ga, ga))
+    
+    sl = p.encoder.encode_sigmoid(left)
+    sr = p.encoder.encode_sigmoid(right)
+    tar = np.append(np.append(sl, sr), tact)
+    
+    out = p.predict(x)
+    print("Mean squared error: ", p.mse(tar, out))
+    ev = p.encoder.decode_sigmoid(out[:,:-42])
+    exp = p.encoder.decode_sigmoid(tar[:-42])
+    print("Expected proprio:\n", exp)
+    print("Evaluated proprio:\n", ev)
+    print("Expected haptic:\n", tar[-42:])
+    print("Evaluated haptic:\n", out[:,-42:])
+    plot_tar_out(tar[20*14:], out[:, 20*14:], 'Test5', ids=(20*14, 322))
+    
